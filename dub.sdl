@@ -1,0 +1,4 @@
+name "lz4d"
+description "A minimal D application."
+copyright "Copyright © 2016, Stefan Koch"
+authors "Stefan Koch"
