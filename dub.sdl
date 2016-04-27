@@ -1,5 +1,5 @@
 name "lz4d"
-description "A minimal D application."
+description "LZ4 at compile time"
 copyright "Copyright © 2016, Stefan Koch"
 authors "Stefan Koch"
 license "BSD"
