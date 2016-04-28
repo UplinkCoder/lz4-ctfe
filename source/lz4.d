@@ -21,7 +21,7 @@ module lz4;
 			static if (endianess == Endianess.LittleEndian) {
 				result |= (_data[i] << i*8);
 			} else {
-				result |= (_data[i] << (T.length-1-i)*8);
+				result |= (_data[i] << (T.sizeof-1-i)*8);
 			}
 		}
 		return result;
