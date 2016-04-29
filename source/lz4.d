@@ -67,7 +67,7 @@ module lz4;
 	ubyte[] decodeLZ4(const ubyte[] input, uint blockLength) pure {
 		uint coffset;
 		ubyte[] output;
-		
+
 		while(true) {
 			auto bitfield = input[coffset++];
 			auto highBits = (bitfield >> 4);
@@ -91,39 +91,35 @@ module lz4;
 			
 			if (coffset >= blockLength) 
 				return output;
-				
-			if (lowBits) {
-				uint matchLength = 0xF + 4;
-				ushort offset = (input[coffset++] | (input[coffset++] << 8));
-				
-				if (lowBits != 0xF) {
-					matchLength = lowBits + 4;
-				} else {
-					while(input[coffset++] == 0xFF) {
-						matchLength += 0xFF;
-					}
-					matchLength += input[coffset-1];
-				}
-				
-				if (unlikely(offset < matchLength)) {
-					uint startMatch =  cast(uint) output.length - offset;
-
-					// this works for now. Maybe it's even more complicated...
-				 	// e.g. lz4 widens the offset as the match gets longer
-					// but the docs seem to suggest that the following code is indeed correct
-
-					while (unlikely(offset < matchLength)) { // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
-						output ~= output[startMatch .. startMatch + offset];
-						matchLength -= offset;
-					}
-
-					output ~= output[startMatch .. startMatch + matchLength];
-				} else {
-					output ~= output[$ - offset .. ($ - offset) + matchLength];
-				}
+			
+			uint matchLength = 0xF + 4;
+			ushort offset = (input[coffset++] | (input[coffset++] << 8));
+			
+			if (lowBits != 0xF) {
+				matchLength = lowBits + 4;
 			} else {
-				ushort offset = (input[coffset++] | (input[coffset++] << 8));
-				output ~= output[$ - offset .. ($ - offset) + 4];
+				while(input[coffset++] == 0xFF) {
+					matchLength += 0xFF;
+				}
+				matchLength += input[coffset-1];
 			}
+			
+			if (unlikely(offset < matchLength)) {
+				uint startMatch =  cast(uint) output.length - offset;
+
+				// this works for now. Maybe it's even more complicated...
+				// e.g. lz4 widens the offset as the match gets longer
+				// but the docs seem to suggest that the following code is indeed correct
+
+				while (unlikely(offset < matchLength)) { // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
+					output ~= output[startMatch .. startMatch + offset];
+					matchLength -= offset;
+				}
+
+				output ~= output[startMatch .. startMatch + matchLength];
+			} else {
+				output ~= output[$ - offset .. ($ - offset) + matchLength];
+			}
+			
 		}
 	}
