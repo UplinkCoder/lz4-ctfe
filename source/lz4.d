@@ -19,7 +19,7 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data
 {
 	static assert(is(T : long)); // poor man's isIntegral
 	T result;
-
+	
 	foreach (i; 0 .. T.sizeof)
 	{
 		static if (endianess == Endianess.LittleEndian)
@@ -72,10 +72,10 @@ ubyte[] decodeLZ4File(const ubyte[] data)
 	auto lz4Header = LZ4Header(data[5 .. $]);
 	uint length = fromBytes!uint(data[lz4Header.end .. lz4Header.end + uint.sizeof]);
 
-	return decodeLZ4(data[lz4Header.end + uint.sizeof .. $], length);
+	return decodeLZ4Block(data[lz4Header.end + uint.sizeof .. $], length);
 }
 
-ubyte[] decodeLZ4(const ubyte[] input, uint blockLength) pure
+ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure
 {
 	uint coffset;
 	ubyte[] output;
