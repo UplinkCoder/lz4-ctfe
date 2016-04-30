@@ -59,7 +59,7 @@ struct LZ4Header
 
 		if (hasContentSize)
 		{
-			contentSize = fromBytes!ulong(data[2 .. 9]);
+			contentSize = fromBytes!ulong(data[2 .. 2 + ulong.sizeof]);
 			assert(contentSize);
 			end = 11;
 		}
