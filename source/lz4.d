@@ -66,8 +66,9 @@ struct LZ4Header
 	}
 }
 
-ubyte[] decodeLZ4File(const ubyte[] data)
-{
+ubyte[] decodeLZ4File(const ubyte[] data) pure in {
+	assert(data.length > 11, "Any valid LZ4 File has ti be longer then 11 bytes");
+} body {
 	assert(data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18], "not a valid LZ4 file");
 	auto lz4Header = LZ4Header(data[5 .. $]);
 	uint length = fromBytes!uint(data[lz4Header.end .. lz4Header.end + uint.sizeof]);
@@ -75,11 +76,12 @@ ubyte[] decodeLZ4File(const ubyte[] data)
 	return decodeLZ4Block(data[lz4Header.end + uint.sizeof .. $], length);
 }
 
-ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure
-{
+ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
+	assert(input.length > 5, "empty or too short input passed to decodeLZ4Block");
+} body {
 	uint coffset;
 	ubyte[] output;
-
+	
 	while (true)
 	{
 		auto bitfield = input[coffset++];
@@ -146,6 +148,5 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure
 		{
 			output ~= output[$ - offset .. ($ - offset) + matchLength];
 		}
-
 	}
 }
