@@ -75,12 +75,15 @@ ubyte[] decodeLZ4File(const ubyte[] data) pure in {
 	size_t decodedBytes = lz4Header.end;
 
 
-	while(decodedBytes <= data.length - 16) {
+	while(true) {
 		uint length = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
+		if (length == 0) { 
+			return result;
+		}
 		result ~= decodeLZ4Block(data[decodedBytes + uint.sizeof ..  $], length);
 		decodedBytes += length + uint.sizeof;
 	}
-	return result;
+	assert(0); // "We can never get here"
 }
 
 ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
