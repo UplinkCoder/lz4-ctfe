@@ -61,7 +61,7 @@ struct LZ4Header
 		{
 			contentSize = fromBytes!ulong(data[2 .. 2 + ulong.sizeof]);
 			assert(contentSize);
-			end = 11;
+			end = end + cast(uint)ulong.sizeof;
 		}
 	}
 }
