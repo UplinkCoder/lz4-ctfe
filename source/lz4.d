@@ -90,8 +90,14 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 	assert(input.length > 5, "empty or too short input passed to decodeLZ4Block");
 } body {
 	uint coffset;
-	ubyte[] output;
-	
+	uint dlen;
+
+//	ubyte[] output;
+	ubyte[64000] output;
+	import core.stdc.string;
+	import core.stdc.stdlib;
+
+//	ubyte* bfr = malloc(6881280); 
 	while (true)
 	{
 		auto bitfield = input[coffset++];
@@ -115,12 +121,13 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 				literalsLength += input[coffset - 1];
 			}
 
-			output ~= input[coffset .. coffset + literalsLength];
+			output[dlen .. dlen + literalsLength] = input[coffset .. coffset + literalsLength];
 			coffset += literalsLength;
+			dlen += literalsLength;
 		}
 
 		if (coffset >= blockLength)
-			return output;
+			return output[0 .. dlen].dup;
 
 		uint matchLength = 0xF + 4;
 		ushort offset = (input[coffset++] | (input[coffset++] << 8));
@@ -140,23 +147,51 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 
 		if (unlikely(offset < matchLength))
 		{
-			uint startMatch = cast(uint) output.length - offset;
 
 			// this works for now. Maybe it's even more complicated...
 			// e.g. lz4 widens the offset as the match gets longer
 			// but the docs seem to suggest that the following code is indeed correct
+			uint done = matchLength;
 
-			while (unlikely(offset < matchLength))
+			while (unlikely(offset < done))
 			{ // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
-				output ~= output[startMatch .. startMatch + offset];
-				matchLength -= offset;
+				if (__ctfe) {
+					foreach(i;0 .. offset) {
+						output[i + dlen] = output[i + dlen - offset];
+					}
+				//	output[dlen .. dlen + offset] = output[dlen - offset .. dlen];
+				} else {
+					memcpy(output.ptr + dlen, output.ptr + dlen - offset, offset);
+				}
+				//output ~= output[dlen - offset .. dlen];
+		
+			
+				dlen += offset;
+				done -= offset;
 			}
 
-			output ~= output[startMatch .. startMatch + matchLength];
+			if (__ctfe) {
+				foreach(i;0 .. done) {
+					output[i + dlen] = output[i + dlen - offset];
+				}
+			//output[dlen .. dlen + done] = output[dlen - offset .. (dlen - offset) + done];
+			} else {
+				memcpy(output.ptr + dlen, output.ptr + dlen - offset, done);
+			}
+			dlen += done;
 		}
 		else
 		{
-			output ~= output[$ - offset .. ($ - offset) + matchLength];
+			if (__ctfe) {
+				foreach(i;0 .. matchLength) {
+					output[i + dlen] = output[i + dlen - offset];
+				}
+			//	output[dlen .. dlen + matchLength] = output[dlen - offset .. (dlen - offset) + matchLength];
+			} else {
+				memcpy(output.ptr + dlen, output.ptr + dlen - offset, matchLength);
+			}
+			//output ~= output[dlen - offset .. (dlen - offset) + matchLength];
+			dlen += matchLength;
 		}
 	}
 }
