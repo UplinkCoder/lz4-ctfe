@@ -19,7 +19,7 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data
 {
 	static assert(is(T : long)); // poor man's isIntegral
 	T result;
-	
+
 	foreach (i; 0 .. T.sizeof)
 	{
 		static if (endianess == Endianess.LittleEndian)
@@ -69,11 +69,18 @@ struct LZ4Header
 ubyte[] decodeLZ4File(const ubyte[] data) pure in {
 	assert(data.length > 11, "Any valid LZ4 File has ti be longer then 11 bytes");
 } body {
+	ubyte[] result;
 	assert(data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18], "not a valid LZ4 file");
 	auto lz4Header = LZ4Header(data[5 .. $]);
-	uint length = fromBytes!uint(data[lz4Header.end .. lz4Header.end + uint.sizeof]);
+	size_t decodedBytes = lz4Header.end;
 
-	return decodeLZ4Block(data[lz4Header.end + uint.sizeof .. $], length);
+
+	while(decodedBytes <= data.length - 16) {
+		uint length = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
+		result ~= decodeLZ4Block(data[decodedBytes + uint.sizeof ..  $], length);
+		decodedBytes += length + uint.sizeof;
+	}
+	return result;
 }
 
 ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
