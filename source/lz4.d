@@ -19,8 +19,31 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data
 {
 	static assert(is(T : long)); // poor man's isIntegral
 	T result;
+	static if (endianess == Endianess.LittleEndian) {
+		static if (T.sizeof == 4) {
+			result = (
+				_data[0] |
+				(_data[1] << 8) |
+				(_data[2] << 16) |
+				(_data[3] << 24)
+			); 
+		} else static if (T.sizeof == 8) {
+			result = (
+				_data[0] |
+				(_data[1] << 8) |
+				(_data[2] << 16) |
+				(_data[3] << 24) |
+				(cast(ulong)_data[4] << 32UL) |
+				(cast(ulong)_data[5] << 40UL) |
+				(cast(ulong)_data[6] << 48UL) |
+				(cast(ulong)_data[7] << 56UL)
+			); 
+		} else 
+			static assert(0, "only int and long are supported");
+	} else 
+		static assert(0, "Big Endian currently not supported");
 
-	foreach (i; 0 .. T.sizeof)
+/*	foreach (i; 0 .. T.sizeof)
 	{
 		static if (endianess == Endianess.LittleEndian)
 		{
@@ -30,7 +53,7 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data
 		{
 			result |= (_data[i] << (T.sizeof - 1 - i) * 8);
 		}
-	}
+	} */
 	return result;
 }
 
