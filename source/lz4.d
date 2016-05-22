@@ -19,7 +19,6 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _dat
 pure {
 	static assert(is(T : long)); // poor man's isIntegral
 	T result;
-<<<<<<< Updated upstream
 	static if (endianess == Endianess.LittleEndian) {
 		static if (T.sizeof == 4) {
 			result = (
