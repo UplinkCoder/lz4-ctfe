@@ -94,42 +94,32 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 	
 	while (true)
 	{
-		auto bitfield = input[coffset++];
-		auto highBits = (bitfield >> 4);
-		auto lowBits = bitfield & 0xF;
+		immutable bitfield = input[coffset++];
+		immutable highBits = (bitfield >> 4);
+		immutable lowBits = bitfield & 0xF;
+		
+		uint literalsLength = highBits;
 
-		if (highBits)
+		if (highBits == 0xF)
 		{
-			uint literalsLength = 0xF;
-
-			if (highBits != 0xF)
+			while (input[coffset++] == 0xFF)
 			{
-				literalsLength = highBits;
+				literalsLength += 0xFF;
 			}
-			else
-			{
-				while (input[coffset++] == 0xFF)
-				{
-					literalsLength += 0xFF;
-				}
-				literalsLength += input[coffset - 1];
-			}
-
-			output ~= input[coffset .. coffset + literalsLength];
-			coffset += literalsLength;
+			literalsLength += input[coffset - 1];
 		}
+
+		output ~= input[coffset .. coffset + literalsLength];
+		coffset += literalsLength;
+		
 
 		if (coffset >= blockLength)
 			return output;
 
-		uint matchLength = 0xF + 4;
+		uint matchLength = lowBits + 4;
 		ushort offset = (input[coffset++] | (input[coffset++] << 8));
 
-		if (lowBits != 0xF)
-		{
-			matchLength = lowBits + 4;
-		}
-		else
+		if (lowBits == 0xF)
 		{
 			while (input[coffset++] == 0xFF)
 			{
