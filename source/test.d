@@ -20,5 +20,6 @@ void static_unittest()
 	;
 
 	static assert(decodeLZ4File(compressed) == uncompressed);
-	pragma(msg, decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4")));
+	pragma(msg, cast(string) decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4")));
 }
+
