@@ -83,7 +83,7 @@ struct LZ4Header
 
 		if (hasContentSize)
 		{
-			contentSize = fromBytes!ulong(data[2 .. 9]);
+			contentSize = fromBytes!ulong(data[2 .. 2 + ulong.sizeof]);
 			assert(contentSize);
 			end = end + cast(uint)ulong.sizeof;
 		}
@@ -109,9 +109,9 @@ ubyte[] decodeLZ4File(const ubyte[] data) pure in {
 	}
 	assert(0); // "We can never get here"
 }
-
-ubyte[] decodeLZ4(const ubyte[] input, uint blockLength) pure
-{
+ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
+       assert(input.length > 5, "empty or too short input passed to decodeLZ4Block");
+} body {
 	uint coffset;
 	ubyte[] output;
 
