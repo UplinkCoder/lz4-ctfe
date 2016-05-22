@@ -15,10 +15,11 @@ auto unlikely(T)(T expressionValue)
 	return expressionValue;
 }
 
-T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data)
-{
+T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
+pure {
 	static assert(is(T : long)); // poor man's isIntegral
 	T result;
+<<<<<<< Updated upstream
 	static if (endianess == Endianess.LittleEndian) {
 		static if (T.sizeof == 4) {
 			result = (
@@ -55,6 +56,7 @@ T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data
 		}
 	} */
 	return result;
+	
 }
 
 struct LZ4Header
@@ -82,7 +84,7 @@ struct LZ4Header
 
 		if (hasContentSize)
 		{
-			contentSize = fromBytes!ulong(data[2 .. 2 + ulong.sizeof]);
+			contentSize = fromBytes!ulong(data[2 .. 9]);
 			assert(contentSize);
 			end = end + cast(uint)ulong.sizeof;
 		}
@@ -94,9 +96,9 @@ ubyte[] decodeLZ4File(const ubyte[] data) pure in {
 } body {
 	ubyte[] result;
 	assert(data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18], "not a valid LZ4 file");
+
 	auto lz4Header = LZ4Header(data[5 .. $]);
 	size_t decodedBytes = lz4Header.end;
-
 
 	while(true) {
 		uint length = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
@@ -109,12 +111,11 @@ ubyte[] decodeLZ4File(const ubyte[] data) pure in {
 	assert(0); // "We can never get here"
 }
 
-ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
-	assert(input.length > 5, "empty or too short input passed to decodeLZ4Block");
-} body {
+ubyte[] decodeLZ4(const ubyte[] input, uint blockLength) pure
+{
 	uint coffset;
 	ubyte[] output;
-	
+
 	while (true)
 	{
 		immutable bitfield = input[coffset++];
@@ -171,5 +172,6 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 		{
 			output ~= output[$ - offset .. ($ - offset) + matchLength];
 		}
+
 	}
 }
