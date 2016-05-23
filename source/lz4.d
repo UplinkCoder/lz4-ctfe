@@ -15,6 +15,7 @@ auto unlikely(T)(T expressionValue)
     return expressionValue;
 }
 
+<<<<<<< HEAD
 void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
 {
     if (length == 0)
@@ -75,23 +76,47 @@ void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure noth
 
 }
 alias fastCopy = Copy8!false;
-T fromBytes(T, Endianess endianess = Endianess.LittleEndian)(const ubyte[] _data)
-{
-    static assert(is(T : long)); // poor man's isIntegral
-    T result;
+T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
+pure {
+	static assert(is(T : long)); // poor man's isIntegral
+	T result;
+	static if (endianess == Endianess.LittleEndian) {
+		static if (T.sizeof == 4) {
+			result = (
+				_data[0] |
+				(_data[1] << 8) |
+				(_data[2] << 16) |
+				(_data[3] << 24)
+			); 
+		} else static if (T.sizeof == 8) {
+			result = (
+				_data[0] |
+				(_data[1] << 8) |
+				(_data[2] << 16) |
+				(_data[3] << 24) |
+				(cast(ulong)_data[4] << 32UL) |
+				(cast(ulong)_data[5] << 40UL) |
+				(cast(ulong)_data[6] << 48UL) |
+				(cast(ulong)_data[7] << 56UL)
+			); 
+		} else 
+			static assert(0, "only int and long are supported");
+	} else 
+		static assert(0, "Big Endian currently not supported");
 
-    foreach (i; 0 .. T.sizeof)
-    {
-        static if (endianess == Endianess.LittleEndian)
-        {
-            result |= (_data[i] << i * 8);
-        }
-        else
-        {
-            result |= (_data[i] << (T.sizeof - 1 - i) * 8);
-        }
-    }
-    return result;
+/*	foreach (i; 0 .. T.sizeof)
+	{
+		static if (endianess == Endianess.LittleEndian)
+		{
+			result |= (_data[i] << i * 8);
+		}
+		else
+		{
+			result |= (_data[i] << (T.sizeof - 1 - i) * 8);
+		}
+	} */
+	return result;
+	
 }
 
 struct LZ4Header
