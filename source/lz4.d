@@ -114,15 +114,11 @@ ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength) pure in {
 			}
 
 			literalsLength += input[coffset - 1];
-
-			output[dlen .. dlen + literalsLength] = input[coffset .. coffset + literalsLength];
-			coffset += literalsLength;
-			dlen += literalsLength;
 		}
 
-		output ~= input[coffset .. coffset + literalsLength];
+		output[dlen .. dlen + literalsLength] = input[coffset .. coffset + literalsLength];
 		coffset += literalsLength;
-		
+		dlen += literalsLength;
 
 		if (coffset >= blockLength)
 			return output[0 .. dlen].dup;
