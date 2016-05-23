@@ -15,7 +15,6 @@ auto unlikely(T)(T expressionValue)
     return expressionValue;
 }
 
-<<<<<<< HEAD
 void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
 {
     if (length == 0)
