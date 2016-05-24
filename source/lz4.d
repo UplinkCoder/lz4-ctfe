@@ -243,7 +243,7 @@ body
 
             while (unlikely(offset < done))
             { // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
-                Copy8!true(output.ptr + dlen, output.ptr + dlen - offset, offset);
+                fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
                 //output ~= output[dlen - offset .. dlen];
 
                 dlen += offset;
