@@ -79,9 +79,8 @@ void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure noth
     return;
 
 }
-//alias fastCopy = Copy8!false;
-import core.stdc.string : memcpy;
-alias fastCopy = memcpy;
+alias fastCopy = Copy8!false;
+
 T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
 pure {
 	static assert(is(T : long)); // poor man's isIntegral
@@ -105,22 +104,13 @@ pure {
 				(cast(ulong)_data[6] << 48UL) |
 				(cast(ulong)_data[7] << 56UL)
 			); 
-		} else 
+		} else { 
 			static assert(0, "only int and long are supported");
-	} else 
+		}
+	} else { 
 		static assert(0, "Big Endian currently not supported");
+	}
 
-/*	foreach (i; 0 .. T.sizeof)
-	{
-		static if (endianess == Endianess.LittleEndian)
-		{
-			result |= (_data[i] << i * 8);
-		}
-		else
-		{
-			result |= (_data[i] << (T.sizeof - 1 - i) * 8);
-		}
-	} */
 	return result;
 	
 }
