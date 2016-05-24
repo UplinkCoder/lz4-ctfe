@@ -14,6 +14,11 @@ auto unlikely(T)(T expressionValue)
 {
     return expressionValue;
 }
+/// JUST TO DEMONSTRATE THAT IT IS LIKEY :)
+auto likely(T)(T expressionValue)
+{
+    return expressionValue;
+}
 
 void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
 {
@@ -74,7 +79,9 @@ void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure noth
     return;
 
 }
-alias fastCopy = Copy8!false;
+//alias fastCopy = Copy8!false;
+import core.stdc.string : memcpy;
+alias fastCopy = memcpy;
 T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
 pure {
 	static assert(is(T : long)); // poor man's isIntegral
@@ -121,7 +128,7 @@ pure {
 struct LZ4Header
 {
     //TODO: finish this! ("parsing" LZ4 Frame format header)
-    int end = 7;
+    uint end = 7;
     ubyte flags;
 
     bool hasBlockIndependence;
@@ -204,9 +211,9 @@ body
 
         uint literalsLength = highBits;
 
-        if (highBits == 0xF)
+        if (unlikely(highBits == 0xF))
         {
-            while (input[coffset++] == 0xFF)
+            while (unlikely(input[coffset++] == 0xFF))
             {
                 literalsLength += 0xFF;
             }
@@ -224,7 +231,7 @@ body
         uint matchLength = lowBits + 4;
         ushort offset = (input[coffset++] | (input[coffset++] << 8));
 
-        if (lowBits == 0xF)
+        if (unlikely(lowBits == 0xF))
         {
             while (input[coffset++] == 0xFF)
             {
@@ -235,16 +242,12 @@ body
 
         if (unlikely(offset < matchLength))
         {
-
-            // this works for now. Maybe it's even more complicated...
-            // e.g. lz4 widens the offset as the match gets longer
-            // but the docs seem to suggest that the following code is indeed correct
             uint done = matchLength;
 
-            while (unlikely(offset < done))
-            { // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
-                fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
-                //output ~= output[dlen - offset .. dlen];
+            while (likely(offset < done))
+            {
+                //This is the point where er can speed up the copy significantly!
+		fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
 
                 dlen += offset;
                 done -= offset;
