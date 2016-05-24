@@ -29,7 +29,7 @@ void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure noth
     }
     static if (faster)
     {
-        pragma(msg, "I hope you know what you are doing\n" "This function my override by 7 bytes");
+        pragma(msg, "I hope you know what you are doing\n" "This function may override by 7 bytes");
 
         length += length % 8;
     }
@@ -150,28 +150,33 @@ struct LZ4Header
     }
 }
 
-ubyte[] decodeLZ4File(const ubyte[] data) pure
+
+ubyte[] decodeLZ4File(const ubyte[] data, uint size) pure {
+	ubyte[] output;
+	output.length = size;
+	return decodeLZ4File(data, output.ptr, size);
+}
+ubyte[] decodeLZ4File(const ubyte[] data, ubyte* output, uint outLength) pure
 in
 {
     assert(data.length > 11, "Any valid LZ4 File has to be longer then 11 bytes");
 }
 body
 {
-    ubyte[] result;
-    result.length = 6881280;
+    ubyte[] result = output[0 .. outLength];
     assert(data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18], "not a valid LZ4 file");
     auto lz4Header = LZ4Header(data[5 .. $]);
     size_t decodedBytes = lz4Header.end;
     uint offset;
     while (true)
     {
-        uint length = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
-        if (length == 0)
+        uint blockLength = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
+        if (blockLength == 0)
         {
             return result;
         }
-        decodeLZ4Block(data[decodedBytes + uint.sizeof .. $], length, result);
-        decodedBytes += length + uint.sizeof;
+        decodeLZ4Block(data[decodedBytes + uint.sizeof .. $], blockLength, result);
+        decodedBytes += blockLength + uint.sizeof;
     }
     assert(0); // "We can never get here"
 }
@@ -238,7 +243,7 @@ body
 
             while (unlikely(offset < done))
             { // TODO: IS IT REALLY _unlikely_ or could be _likely_ ?
-                fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
+                Copy8!true(output.ptr + dlen, output.ptr + dlen - offset, offset);
                 //output ~= output[dlen - offset .. dlen];
 
                 dlen += offset;

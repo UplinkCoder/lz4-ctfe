@@ -19,7 +19,7 @@ void static_unittest()
 		"a LZ4 test this test is\n"
 	;
 
-	static assert(decodeLZ4File(compressed)[0 .. uncompressed.length] == uncompressed);
-	pragma(msg, cast(string)decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4")));
+	static assert(decodeLZ4File(compressed, uncompressed.length) == uncompressed);
+	pragma(msg, cast(string)decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4"), ushort.max));
 }
 
