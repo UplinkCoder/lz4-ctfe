@@ -20,66 +20,24 @@ auto likely(T)(T expressionValue)
     return expressionValue;
 }
 
-void Copy8(bool faster)(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
+void fastCopy(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
 {
     if (length == 0)
         return;
-    if (__ctfe)
+    static if (__VERSION__ <= 2068)
     {
-        foreach (i; 0 .. length)
+        if (__ctfe)
         {
-            dst[i] = src[i];
+            foreach(i;0 .. length)
+                dst[i] = src[i];
         }
-        return;
-    }
-    static if (faster)
-    {
-        pragma(msg, "I hope you know what you are doing\n" "This function may override by 7 bytes");
+    } else
 
-        length += length % 8;
-    }
-    else
-    {
-        immutable stillToGo = length % 8;
-        length -= length % 8;
-    }
-
-    while (length != 0)
-    {
-        *(cast(ulong*) dst) = *(cast(ulong*) src);
-        length -= 8;
-        dst += 8;
-        src += 8;
-    }
-    static if (!faster)
-    {
-        switch (stillToGo)
-        {
-        case 7:
-            *(cast(ushort*) dst + 7) = *(cast(ushort*) src + 7);
-            *(cast(ubyte*) dst + 5) = *(cast(ubyte*) src + 5);
-            goto case 4;
-        case 4:
-            *(cast(uint*) dst) = *(cast(uint*) src);
-            break;
-        case 3:
-            *(cast(ubyte*) dst + 3) = *(cast(ubyte*) src + 3);
-            goto case 2;
-        case 2:
-            *(cast(ushort*) dst) = *(cast(ushort*) src);
-            break;
-        case 1:
-            *(cast(ubyte*) dst) = *(cast(ubyte*) src);
-            break;
-        default:
-            break;
-        }
-    }
+    dst[0 .. length] = src[0 .. length];
 
     return;
 
 }
-alias fastCopy = Copy8!false;
 
 T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
 pure {
@@ -219,7 +177,7 @@ body
             return output[0 .. dlen];
 
         uint matchLength = lowBits + 4;
-        ushort offset = (input[coffset++] | (input[coffset++] << 8));
+        immutable ushort offset = (input[coffset++] | (input[coffset++] << 8));
 
         if (unlikely(lowBits == 0xF))
         {
