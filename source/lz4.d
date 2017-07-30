@@ -41,36 +41,36 @@ void fastCopy(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trust
 
 T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
 pure {
-	static assert(is(T : long)); // poor man's isIntegral
-	T result;
-	static if (endianess == Endianess.LittleEndian) {
-		static if (T.sizeof == 4) {
-			result = (
-				_data[0] |
-				(_data[1] << 8) |
-				(_data[2] << 16) |
-				(_data[3] << 24)
-			); 
-		} else static if (T.sizeof == 8) {
-			result = (
-				_data[0] |
-				(_data[1] << 8) |
-				(_data[2] << 16) |
-				(_data[3] << 24) |
-				(cast(ulong)_data[4] << 32UL) |
-				(cast(ulong)_data[5] << 40UL) |
-				(cast(ulong)_data[6] << 48UL) |
-				(cast(ulong)_data[7] << 56UL)
-			); 
-		} else { 
-			static assert(0, "only int and long are supported");
-		}
-	} else { 
-		static assert(0, "Big Endian currently not supported");
-	}
+    static assert(is(T : long)); // poor man's isIntegral
+    T result;
+    static if (endianess == Endianess.LittleEndian) {
+        static if (T.sizeof == 4) {
+            result = (
+                _data[0] |
+                (_data[1] << 8) |
+                (_data[2] << 16) |
+                (_data[3] << 24)
+            );
+        } else static if (T.sizeof == 8) {
+            result = (
+                _data[0] |
+                (_data[1] << 8) |
+                (_data[2] << 16) |
+                (_data[3] << 24) |
+                (cast(ulong)_data[4] << 32UL) |
+                (cast(ulong)_data[5] << 40UL) |
+                (cast(ulong)_data[6] << 48UL) |
+                (cast(ulong)_data[7] << 56UL)
+            );
+        } else {
+            static assert(0, "only int and long are supported");
+        }
+    } else {
+        static assert(0, "Big Endian currently not supported");
+    }
 
-	return result;
-	
+    return result;
+
 }
 
 struct LZ4Header
@@ -107,9 +107,9 @@ struct LZ4Header
 
 
 ubyte[] decodeLZ4File(const ubyte[] data, uint size) pure {
-	ubyte[] output;
-	output.length = size;
-	return decodeLZ4File(data, output.ptr, size);
+    ubyte[] output;
+    output.length = size;
+    return decodeLZ4File(data, output.ptr, size);
 }
 ubyte[] decodeLZ4File(const ubyte[] data, ubyte* output, uint outLength) pure
 in
@@ -137,7 +137,7 @@ body
 }
 
 //extern(C) ubyte* decodeLZ4Block(const(ubyte)* input, uint blockLength, ubyte* output, uint outLength) pure {
-//	return decodeLZ4Block(input[0 .. blockLength], blockLength, output[0 .. outLength]).ptr;
+//    return decodeLZ4Block(input[0 .. blockLength], blockLength, output[0 .. outLength]).ptr;
 //}
 
 
@@ -195,7 +195,7 @@ body
             while (likely(offset < done))
             {
                 //This is the point where er can speed up the copy significantly!
-		fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
+                fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
 
                 dlen += offset;
                 done -= offset;
