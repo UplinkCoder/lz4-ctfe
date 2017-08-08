@@ -13,11 +13,11 @@ void static_unittest()
 	];
 
 	static immutable char[] uncompressed =
-		"this is a LZ4 test\n"
-		"a test for LZ4\n"
-		"this LZ4 test is a LZ4 test\n"
-		"a LZ4 test this test is\n"
-	;
+`this is a LZ4 test
+a test for LZ4
+this LZ4 test is a LZ4 test
+a LZ4 test this test is
+`;
 
 	static assert(decodeLZ4File(compressed, uncompressed.length) == uncompressed);
 	pragma(msg, cast(string)decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4"), ushort.max / 4));
