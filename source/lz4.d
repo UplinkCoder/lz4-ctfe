@@ -9,35 +9,6 @@ enum Endianess
     BigEndian,
     LittleEndian
 }
-/// JUST TO DEMONSTRATE THAT IT IS UNLIKELY :)
-auto unlikely(T)(T expressionValue)
-{
-    return expressionValue;
-}
-/// JUST TO DEMONSTRATE THAT IT IS LIKEY :)
-auto likely(T)(T expressionValue)
-{
-    return expressionValue;
-}
-
-void fastCopy(ubyte* dst, const (ubyte)* src, size_t length) pure nothrow @trusted
-{
-    if (length == 0)
-        return;
-    static if (__VERSION__ <= 2068)
-    {
-        if (__ctfe)
-        {
-            foreach(i;0 .. length)
-                dst[i] = src[i];
-        }
-    } else
-
-    dst[0 .. length] = src[0 .. length];
-
-    return;
-
-}
 
 T fromBytes(T, Endianess endianess = Endianess.LittleEndian) (const ubyte[] _data)
 pure {
@@ -77,7 +48,7 @@ struct LZ4Header
 {
     //TODO: finish this! ("parsing" LZ4 Frame format header)
     uint end = 7;
-    ubyte flags;
+    uint flags;
 
     bool hasBlockIndependence;
     bool hasBlockChecksum;
@@ -87,19 +58,21 @@ struct LZ4Header
 
     this(const ubyte[] data) pure
     {
-        assert(((data[0] >> 6) & 0b11) == 0b01, "Format can not be read");
+        immutable data0 = data[0];
 
-        hasBlockIndependence = ((data[0] >> 5) & 0b1);
-        hasBlockChecksum = ((data[0] >> 4) & 0b1);
+        assert(((data0 >> 6) & 0b11) == 0b01, "Format can not be read");
 
-        bool hasContentSize = ((data[0] >> 3) & 0b1);
+        hasBlockIndependence = ((data0 >> 5) & 0b1);
+        hasBlockChecksum = ((data0 >> 4) & 0b1);
 
-        hasContentChecksum = ((data[0] >> 2) & 0b1);
+        bool hasContentSize = ((data0 >> 3) & 0b1);
+
+        hasContentChecksum = ((data0 >> 2) & 0b1);
 
         if (hasContentSize)
         {
             contentSize = fromBytes!ulong(data[2 .. 2 + ulong.sizeof]);
-            assert(contentSize);
+            assert(contentSize > 0);
             end = end + cast(uint) ulong.sizeof;
         }
     }
@@ -109,9 +82,9 @@ struct LZ4Header
 ubyte[] decodeLZ4File(const ubyte[] data, uint size) pure {
     ubyte[] output;
     output.length = size;
-    return decodeLZ4File(data, output.ptr, size);
+    return decodeLZ4File(data, output, size);
 }
-ubyte[] decodeLZ4File(const ubyte[] data, ubyte* output, uint outLength) pure
+ubyte[] decodeLZ4File(const ubyte[] data, ubyte[] output, uint outLength) pure
 in
 {
     assert(data.length > 11, "Any valid LZ4 File has to be longer then 11 bytes");
@@ -119,13 +92,14 @@ in
 body
 {
     ubyte[] result = output[0 .. outLength];
-    assert(data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18], "not a valid LZ4 file");
+    bool validFile = data[0 .. 4] == [0x04, 0x22, 0x4d, 0x18];
+    assert(validFile, "not a valid LZ4 file");
     auto lz4Header = LZ4Header(data[5 .. $]);
-    size_t decodedBytes = lz4Header.end;
+    uint decodedBytes = lz4Header.end;
     uint offset;
     while (true)
     {
-        uint blockLength = fromBytes!uint(data[decodedBytes .. decodedBytes + uint.sizeof]);
+        uint blockLength = fromBytes!uint(data[decodedBytes .. decodedBytes + cast(uint)uint.sizeof]);
         if (blockLength == 0)
         {
             return result;
@@ -141,7 +115,7 @@ body
 //}
 
 
-ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength, ref ubyte[] output) pure
+ubyte[] decodeLZ4Block(const ubyte[] input, uint blockLength, ubyte[] output) pure
 in
 {
     assert(input.length > 5, "empty or too short input passed to decodeLZ4Block");
@@ -159,19 +133,20 @@ body
 
         uint literalsLength = highBits;
 
-        if (unlikely(highBits == 0xF))
+        if (/*unlikely*/(highBits == 0xF))
         {
-            while (unlikely(input[coffset++] == 0xFF))
+            while (/*unlikely*/(input[coffset++] == 0xFF))
             {
                 literalsLength += 0xFF;
             }
 
             literalsLength += input[coffset - 1];
         }
-
-        fastCopy(output.ptr + dlen,  input.ptr + coffset, literalsLength);
-        coffset += literalsLength;
-        dlen += literalsLength;
+        uint until_d = dlen + literalsLength;
+        uint until_c = coffset + literalsLength;
+        output[dlen .. until_d] = input[coffset .. until_c];
+        coffset = until_c;
+        dlen = until_d;
 
         if (coffset >= blockLength)
             return output[0 .. dlen];
@@ -179,7 +154,7 @@ body
         uint matchLength = lowBits + 4;
         immutable ushort offset = (input[coffset++] | (input[coffset++] << 8));
 
-        if (unlikely(lowBits == 0xF))
+        if (/*unlikely*/(lowBits == 0xF))
         {
             while (input[coffset++] == 0xFF)
             {
@@ -188,26 +163,35 @@ body
             matchLength += input[coffset - 1];
         }
 
-        if (unlikely(offset < matchLength))
+        if (/*unlikely*/(offset < matchLength))
         {
             uint done = matchLength;
 
-            while (likely(offset < done))
+            while (/*likely*/(offset < done))
             {
                 //This is the point where er can speed up the copy significantly!
-                fastCopy(output.ptr + dlen, output.ptr + dlen - offset, offset);
+                const d_until = dlen + offset;
+                const c_begin = dlen - offset;
+                output[dlen .. d_until] = output[c_begin .. dlen];
 
-                dlen += offset;
+                dlen = d_until;
                 done -= offset;
             }
+            const until = dlen + done;
+            const c_begin = dlen - offset;
+            const c_end = until - offset;
 
-            fastCopy(output.ptr + dlen, output.ptr + dlen - offset, done);
-            dlen += done;
+            output[dlen .. until] = output[c_begin .. c_end];
+            dlen = until;
         }
         else
         {
-            fastCopy(output.ptr + dlen, output.ptr + dlen - offset, matchLength);
-            dlen += matchLength;
+            const until = dlen + matchLength;
+            const c_begin = dlen - offset;
+            const c_end = until - offset;
+
+            output[dlen .. until] = output[c_begin .. c_end];
+            dlen = until;
         }
     }
 }
