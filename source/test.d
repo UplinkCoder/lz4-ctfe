@@ -21,5 +21,6 @@ a LZ4 test this test is
 
 	static assert(decodeLZ4File(compressed, uncompressed.length) == uncompressed);
 	pragma(msg, cast(string)decodeLZ4File(cast(ubyte[]) import("lz4.d.lz4"), ushort.max / 4));
+	pragma(msg, cast(string)decodeLZ4File(cast(ubyte[]) import("mandelb.bf.lz4"), ushort.max / 4));
 }
 
